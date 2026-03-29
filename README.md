@@ -34,7 +34,7 @@ Four pieces work together:
 
 **The checkpoint hook** — runs before Claude Code compacts the context window. It tells Claude to update your vault files before anything is lost. The automated equivalent of "save your work."
 
-**MCPVault** — lets Claude update your vault files surgically during a session: appending a decision, updating a status, writing a note. The vault stays current without manual effort.
+**[MCPVault](https://github.com/bitbonsai/mcpvault)** — lets Claude update your vault files surgically during a session: appending a decision, updating a status, writing a note. The vault stays current without manual effort.
 
 No database. No running processes. No port 37777.
 
@@ -174,7 +174,7 @@ The hook system is Claude Code-specific — it uses `settings.json` lifecycle ho
 
 - macOS or Linux
 - `jq`
-- `node` (for MCPVault)
+- `node` (for [MCPVault](https://github.com/bitbonsai/mcpvault))
 - Claude Code
 
 ---
