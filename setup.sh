@@ -143,14 +143,6 @@ SETTINGS_DIR="$HOME/.claude"
 HOOK_COMMAND="$SCRIPT_DIR/hooks/inject-context.sh"
 HOOK_STATUS=""
 
-# Build the hook entry JSON with the resolved absolute path
-HOOK_ENTRY=$(jq -n \
-  --arg cmd "$HOOK_COMMAND" \
-  '{
-    matcher: "Task",
-    hooks: [{ type: "command", command: $cmd }]
-  }')
-
 if [ ! -f "$SETTINGS_FILE" ] || [ ! -s "$SETTINGS_FILE" ]; then
   # Case 1/2: file does not exist or is empty
   mkdir -p "$SETTINGS_DIR"
@@ -158,9 +150,9 @@ if [ ! -f "$SETTINGS_FILE" ] || [ ! -s "$SETTINGS_FILE" ]; then
     --arg cmd "$HOOK_COMMAND" \
     '{
       hooks: {
-        PostToolUse: [
+        SessionStart: [
           {
-            matcher: "Task",
+            matcher: "",
             hooks: [{ type: "command", command: $cmd }]
           }
         ]
@@ -184,9 +176,9 @@ else
       --arg cmd "$HOOK_COMMAND" \
       '{
         hooks: {
-          PostToolUse: [
+          SessionStart: [
             {
-              matcher: "Task",
+              matcher: "",
               hooks: [{ type: "command", command: $cmd }]
             }
           ]
@@ -199,8 +191,8 @@ else
     ALREADY_PRESENT=$(jq \
       --arg cmd "$HOOK_COMMAND" \
       '[
-        .hooks.PostToolUse[]?
-        | select(.matcher == "Task")
+        .hooks.SessionStart[]?
+        | select(.matcher == "")
         | .hooks[]?
         | select(.type == "command" and .command == $cmd)
       ] | length' \
@@ -226,9 +218,9 @@ else
           --arg cmd "$HOOK_COMMAND" \
           '. + {
             hooks: {
-              PostToolUse: [
+              SessionStart: [
                 {
-                  matcher: "Task",
+                  matcher: "",
                   hooks: [{ type: "command", command: $cmd }]
                 }
               ]
@@ -237,14 +229,14 @@ else
           "$SETTINGS_FILE")
       else
         # Case 4: valid JSON, has hooks key, entry not present
-        HAS_POST_TOOL_USE=$(jq '.hooks | has("PostToolUse")' "$SETTINGS_FILE")
+        HAS_SESSION_START=$(jq '.hooks | has("SessionStart")' "$SETTINGS_FILE")
 
-        if [ "$HAS_POST_TOOL_USE" = "false" ]; then
+        if [ "$HAS_SESSION_START" = "false" ]; then
           MERGED=$(jq \
             --arg cmd "$HOOK_COMMAND" \
-            '.hooks.PostToolUse = [
+            '.hooks.SessionStart = [
               {
-                matcher: "Task",
+                matcher: "",
                 hooks: [{ type: "command", command: $cmd }]
               }
             ]' \
@@ -252,9 +244,9 @@ else
         else
           MERGED=$(jq \
             --arg cmd "$HOOK_COMMAND" \
-            '.hooks.PostToolUse += [
+            '.hooks.SessionStart += [
               {
-                matcher: "Task",
+                matcher: "",
                 hooks: [{ type: "command", command: $cmd }]
               }
             ]' \
@@ -281,4 +273,37 @@ echo ""
 echo "Vault installed at: $VAULT_DIR"
 echo "Hook status: $HOOK_STATUS"
 echo ""
-echo "Open Global/CONTEXT.md and fill in your identity and project context. Then start a Claude Code session."
+echo "------------------------------------------------------------"
+echo "Add the following block to ~/.claude/CLAUDE.md"
+echo "------------------------------------------------------------"
+cat <<CLAUDEMD
+
+## Vault & Project Context
+
+Vault is at $VAULT_DIR via MCPVault (obsidian MCP server).
+
+Structure:
+
+- Global/CONTEXT.md — identity, cross-project constraints, active projects
+- Projects/{project}/STATUS.md — current state, last session, next steps
+- Projects/{project}/CONTEXT.md — full technical context, load on demand
+- Projects/{project}/DECISIONS.md — locked decisions, search on demand
+
+At the start of any project session: read Projects/{project}/STATUS.md and
+Global/CONTEXT.md unless already provided in context. Do not load CONTEXT.md
+or DECISIONS.md unless the task requires them.
+
+At the end of any session, without being asked:
+
+1. List every decision made this session in one sentence each
+2. List every assumption validated or invalidated
+3. Patch STATUS.md with current state and next steps
+4. Patch DECISIONS.md with any new locked decisions
+5. Flag immediately if any session decision contradicts a locked prior decision
+
+Never re-suggest anything listed in any DECISIONS.md graveyard section.
+
+CLAUDEMD
+echo "------------------------------------------------------------"
+echo ""
+echo "Open $VAULT_DIR/Global/CONTEXT.md and fill in your identity and project context. Then start a Claude Code session."
