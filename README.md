@@ -34,7 +34,7 @@ Four pieces work together:
 
 **The session hook** — a small script that runs at the start of every Claude Code session. It reads your vault and injects the right context automatically. You don't think about it.
 
-**The checkpoint hook** — runs before Claude Code compacts the context window. It tells Claude to update your vault files before anything is lost. The automated equivalent of "save your work."
+**The checkpoint hook** — runs after every Claude response (Stop event), rate-limited to fire an instruction every 5 turns by default (configurable). It tells Claude to update your vault files periodically without waiting for you to ask. The automated equivalent of "save your work."
 
 **[MCPVault](https://github.com/bitbonsai/mcpvault)** — lets Claude update your vault files surgically during a session: appending a decision, updating a status, writing a note. The vault stays current without manual effort.
 
@@ -137,9 +137,9 @@ Either way, `STATUS.md` is the highest priority to fill in — it loads every se
 
 ## How vault updates happen
 
-**During a session** — Claude uses MCPVault's `patch_note` tool to make surgical updates: appending a decision, changing a status line, updating next steps. This runs via a dedicated memory-writer subagent in an isolated context window so vault I/O never pollutes the main session.
+**During a session** — Claude uses MCPVault's `patch_note` tool to make surgical updates: appending a decision, changing a status line, updating next steps. This runs via the memory-writer subagent — a lightweight Haiku agent installed to `~/.claude/agents/` by the setup script — in an isolated context window so vault I/O never pollutes the main session.
 
-**At compaction** — when Claude Code's context window fills and compacts (configurable, default ~50%), the checkpoint hook fires automatically. Claude updates `STATUS.md` and `DECISIONS.md` before compaction runs. Nothing is lost.
+**Periodically** — the checkpoint hook fires after every Claude response and emits a vault update instruction every 5 turns (adjustable via `WRITE_EVERY` in `hooks/session-checkpoint.sh`). Claude updates `STATUS.md` and `DECISIONS.md` automatically in the background.
 
 You can also trigger a manual update at any time by saying `close the session` — Claude will write a full session summary to your vault files.
 
