@@ -10,6 +10,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/claude-lore/hooks/session-checkpoint.sh"
+          }
+        ]
+      }
     ]
   }
 }

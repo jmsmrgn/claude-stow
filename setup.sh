@@ -110,8 +110,9 @@ if [ ! -d "$VAULT_DIR/Projects" ]; then
   mkdir -p "$VAULT_DIR/Projects"
 fi
 
-# Ensure scripts are executable
+# Ensure scripts and hooks are executable
 chmod +x "$SCRIPT_DIR/scripts/status.sh"
+chmod +x "$SCRIPT_DIR/hooks/session-checkpoint.sh"
 
 # ---------------------------------------------------------------------------
 # STEP 5 — Install memory-writer subagent
@@ -276,12 +277,79 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# STEP 6b — Stop hook injection (session-checkpoint.sh)
+# ---------------------------------------------------------------------------
+
+STOP_HOOK_COMMAND="$SCRIPT_DIR/hooks/session-checkpoint.sh"
+STOP_HOOK_STATUS=""
+
+if [ "$HOOK_STATUS" = "manual merge required" ]; then
+  STOP_HOOK_STATUS="manual merge required"
+elif ! jq empty "$SETTINGS_FILE" > /dev/null 2>&1; then
+  STOP_HOOK_STATUS="manual merge required"
+else
+  STOP_ALREADY_PRESENT=$(jq \
+    --arg cmd "$STOP_HOOK_COMMAND" \
+    '[
+      .hooks.Stop[]?
+      | select(.matcher == "")
+      | .hooks[]?
+      | select(.type == "command" and .command == $cmd)
+    ] | length' \
+    "$SETTINGS_FILE")
+
+  if [ "$STOP_ALREADY_PRESENT" -gt 0 ] 2>/dev/null; then
+    echo "Stop hook already present — skipping."
+    STOP_HOOK_STATUS="already present"
+  else
+    cp "$SETTINGS_FILE" "${SETTINGS_FILE}.bak"
+    if [ $? -ne 0 ]; then
+      echo "ERROR: Could not create backup at ${SETTINGS_FILE}.bak"
+      exit 1
+    fi
+
+    HAS_STOP=$(jq '.hooks | has("Stop")' "$SETTINGS_FILE")
+
+    if [ "$HAS_STOP" = "false" ]; then
+      MERGED=$(jq \
+        --arg cmd "$STOP_HOOK_COMMAND" \
+        '.hooks.Stop = [
+          {
+            matcher: "",
+            hooks: [{ type: "command", command: $cmd }]
+          }
+        ]' \
+        "$SETTINGS_FILE")
+    else
+      MERGED=$(jq \
+        --arg cmd "$STOP_HOOK_COMMAND" \
+        '.hooks.Stop += [
+          {
+            matcher: "",
+            hooks: [{ type: "command", command: $cmd }]
+          }
+        ]' \
+        "$SETTINGS_FILE")
+    fi
+
+    printf '%s\n' "$MERGED" > "$SETTINGS_FILE"
+    if [ $? -ne 0 ]; then
+      echo "ERROR: Could not write merged settings to $SETTINGS_FILE"
+      echo "Your original settings are backed up at ${SETTINGS_FILE}.bak"
+      exit 1
+    fi
+    STOP_HOOK_STATUS="injected"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # STEP 7 — Post-install output
 # ---------------------------------------------------------------------------
 
 echo ""
 echo "Vault installed at: $VAULT_DIR"
-echo "Hook status: $HOOK_STATUS"
+echo "SessionStart hook: $HOOK_STATUS"
+echo "Stop hook:         $STOP_HOOK_STATUS"
 echo ""
 echo "------------------------------------------------------------"
 echo "Add the following block to ~/.claude/CLAUDE.md"
