@@ -143,6 +143,8 @@ Either way, `STATUS.md` is the highest priority to fill in — it loads every se
 
 You can also trigger a manual update at any time by saying `close the session` — Claude will write a full session summary to your vault files.
 
+**Gap to be aware of:** Claude Code has no SessionEnd or OnExit hook. If a session ends before the checkpoint threshold is reached — whether by accident or just a short exchange — no automatic vault write fires. Lowering `WRITE_EVERY` reduces this window but doesn't eliminate it. For any session where something worth keeping happened, `close the session` is the reliable fallback.
+
 ---
 
 ## Session prompts
