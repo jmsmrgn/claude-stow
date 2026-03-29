@@ -119,6 +119,16 @@ Creates the project folder with stub files ready to fill in. Pass an optional re
 ./scripts/new-project.sh my-project ~/git/my-project
 ```
 
+Fill in `STATUS.md` first — it's what loads every session. `CONTEXT.md` and `DECISIONS.md` can wait until there's something worth locking down. See [Vault structure](#vault-structure) for what belongs in each file.
+
+Once the stub is ready, use this prompt to kick off the first session — works in both Claude Code and Claude Desktop:
+
+```
+I just created a new project called [project]. Read the vault stub and help me document what we're building.
+```
+
+Claude will read the files and guide you through filling in the context that matters. In Claude Desktop, this prompt is the entry point since no hook fires automatically.
+
 ---
 
 ## How vault updates happen
