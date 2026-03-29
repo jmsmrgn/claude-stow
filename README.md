@@ -18,7 +18,7 @@ Many users already solve this with a `CLAUDE.md` and a project context file. Tha
 
 `claude-lore` starts the same way: intentional foundation you write. But from there, Claude maintains it. Every decision appends. Every session patches the previous state. The context is always current because the project informs it, not because you remembered to update it.
 
-> **Claude Desktop users:** Auto Memory and Auto Dream are Claude Code-only features. Desktop sessions have no equivalent native memory — `claude-lore` fills that gap directly, not just as a complement to native memory but as a primary persistence layer.
+> **Claude Desktop users:** Auto Memory and Auto Dream are Claude Code-only features. Desktop sessions have no equivalent native memory — `claude-lore` fills that gap directly, not just as a complement to native memory but as a primary persistence layer. Point both at the same vault and context from Desktop thinking is available the moment you open Code.
 
 The constraints that aren't obvious from the code. The approaches you already tried and rejected. The current state of something half-finished. That context doesn't emerge from observation — it has to be written intentionally. And then it has to stay current.
 
@@ -197,7 +197,9 @@ Claude will walk the codebase, identify what's worth encoding, and create the ru
 
 ## Claude Desktop bridge
 
-If you use Claude Desktop for planning and Claude Code for execution, you can point both at the same vault. Context written in a Desktop session carries over to your next Claude Code session automatically.
+Some of the most important project context emerges in conversations that never touch a codebase — exploring tradeoffs, stress-testing an approach, working through something ambiguous before committing to a direction. That kind of unstructured thinking is where Desktop earns its place. Claude Code is where you build. The vault is what connects them.
+
+Point both at the same vault and nothing gets lost. Context written in a Desktop session carries over to your next Claude Code session automatically.
 
 Open `~/Library/Application Support/Claude/claude_desktop_config.json` (create it if it doesn't exist) and add MCPVault under `mcpServers`, pointing at your vault directory:
 
