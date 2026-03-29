@@ -20,7 +20,7 @@ The decisions you made before Claude was in the room. The constraints that aren'
 
 ## What "lore" means here
 
-Lore is the accumulated knowledge of a world — the history, the decisions, the reasons things are the way they are. Every project has its own lore: the stack decisions, the rejected approaches, the constraints, the current state. `claude-lore` is where that lives.
+Lore is the accumulated knowledge of a world — the history, the decisions, the reasons things are the way they are. Every project has its own lore: the stack decisions, the rejected approaches, the constraints, the current state.
 
 ---
 
@@ -46,7 +46,7 @@ No database. No running processes. No port 37777.
 
 **[Continuous-Claude](https://github.com/parcadei/Continuous-Claude-v3)** is a full agent orchestration framework — 109 skills, 32 agents, 30 hooks, Docker, PostgreSQL, and a 12-step setup wizard. Different scope entirely.
 
-`claude-lore` is for the developer who wants their context to survive session boundaries and nothing else. Install time is under 15 minutes. The only dependency beyond standard Unix tools is `jq`.
+`claude-lore` is for the user who wants their context to survive session boundaries and nothing else. Dependencies are node, jq, and MCPVault (handled automatically by the setup script).
 
 ---
 
