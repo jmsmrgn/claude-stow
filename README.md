@@ -16,7 +16,7 @@ That covers what Claude _observed_. It doesn't cover what you need Claude to _kn
 
 Many users already solve this with a `CLAUDE.md` and a project context file. That's the right instinct. But a file you write before the project begins reflects what was true at the time of writing. It goes stale. Decisions accumulate, approaches get rejected, the current state shifts — and none of that finds its way back into the file unless you put it there manually.
 
-`claude-lore` starts the same way: intentional foundation you write. But from there, Claude maintains it. Every decision appends. Every session patches the previous state. The context is always current because the project informs it, not because you remembered to update it.
+`claude-lore` starts the same way: intentional foundation you write. But from there, Claude maintains it. Every decision appends. Every session patches the previous state. The context stays current without you having to remember to update it.
 
 > **Claude Desktop users:** Auto Memory and Auto Dream are Claude Code-only features. Desktop sessions have no equivalent native memory — `claude-lore` fills that gap directly, not just as a complement to native memory but as a primary persistence layer. Point both at the same vault and context from Desktop thinking is available the moment you open Code.
 
