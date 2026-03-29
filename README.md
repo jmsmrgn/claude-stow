@@ -164,6 +164,11 @@ Pull the full CONTEXT.md and DECISIONS.md for [project] — I need you to unders
 Close the session — update STATUS.md and DECISIONS.md with everything from today.
 ```
 
+**Capturing a decision mid-session:**
+```
+Lock this: [decision]. Update DECISIONS.md now.
+```
+
 Any natural phrasing works. The key is referencing the vault explicitly so Claude knows to read the files rather than rely on what's already in context.
 
 **Claude Desktop users:** the hook doesn't fire in Desktop sessions, so the resume prompt is load-bearing, not optional. Start every Desktop session with it. The MCPVault MCP server must also be configured in your Desktop MCP config pointing at the same vault directory — see [Claude Desktop bridge](#claude-desktop-bridge).
