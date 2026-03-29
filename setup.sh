@@ -81,10 +81,10 @@ while IFS= read -r -d '' src_file; do
     fi
   fi
 
-  # Skip .gitkeep — it's only for the repo, not the installed vault
-  if [ "$(basename "$src_file")" = ".gitkeep" ]; then
-    continue
-  fi
+  # Skip repo-only files that should never land in the user's vault
+  case "$(basename "$src_file")" in
+    .gitkeep|.DS_Store) continue ;;
+  esac
 
   if [ -f "$dest_file" ]; then
     echo "Skipping (already exists): $rel_path"
