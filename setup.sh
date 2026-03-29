@@ -110,6 +110,9 @@ if [ ! -d "$VAULT_DIR/Projects" ]; then
   mkdir -p "$VAULT_DIR/Projects"
 fi
 
+# Ensure scripts are executable
+chmod +x "$SCRIPT_DIR/scripts/status.sh"
+
 # ---------------------------------------------------------------------------
 # STEP 5 — Install memory-writer subagent
 # ---------------------------------------------------------------------------
