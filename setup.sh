@@ -20,6 +20,10 @@ VAULT_DISPLAY="$input_path"
 # Expand ~ to absolute path for filesystem operations
 VAULT_DIR="${input_path/#\~/$HOME}"
 
+# Write vault path to config so the session hook can find it
+mkdir -p "$HOME/.claude"
+echo "VAULT_DIR=$VAULT_DIR" > "$HOME/.claude/lore.conf"
+
 # ---------------------------------------------------------------------------
 # STEP 2 — Dependency checks
 # ---------------------------------------------------------------------------
