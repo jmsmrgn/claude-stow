@@ -4,17 +4,23 @@ Persistent project memory that follows Claude across sessions. No database, no b
 
 Every project has lore: the decisions made before Claude was in the room, the approaches already tried, the reasons things are the way they are. This is where you keep it.
 
+Most workflows already start with a plan. This is for everything that happens after.
+
 ---
 
-## The problem
+## The problem with static context
 
 Claude's native memory continues to improve — in Claude Code, Auto Memory takes notes during sessions, and Auto Dream consolidates them between sessions, pruning contradictions, keeping things current.
 
 That covers what Claude _observed_. It doesn't cover what you need Claude to _know from the start_ — context you authored deliberately, that you can read and correct, that exists before the first session begins.
 
+Many users already solve this with a `CLAUDE.md` and a project context file. That's the right instinct. But a file you write before the project begins reflects what was true at the time of writing. It goes stale. Decisions accumulate, approaches get rejected, the current state shifts — and none of that finds its way back into the file unless you put it there manually.
+
+`claude-lore` starts the same way: intentional foundation you write. But from there, Claude maintains it. Every decision appends. Every session patches the previous state. The context is always current because the project informs it, not because you remembered to update it.
+
 > **Claude Desktop users:** Auto Memory and Auto Dream are Claude Code-only features. Desktop sessions have no equivalent native memory — `claude-lore` fills that gap directly, not just as a complement to native memory but as a primary persistence layer.
 
-The constraints that aren't obvious from the code. The approaches you already tried and rejected. The current state of something half-finished. That context doesn't emerge from observation — it has to be written intentionally.
+The constraints that aren't obvious from the code. The approaches you already tried and rejected. The current state of something half-finished. That context doesn't emerge from observation — it has to be written intentionally. And then it has to stay current.
 
 `claude-lore` is where you put that.
 
