@@ -2,6 +2,8 @@
 
 Persistent project memory that follows Claude across sessions. No database, no background service, no infrastructure.
 
+Every project has lore: the decisions made before Claude was in the room, the approaches already tried, the reasons things are the way they are. This is where you keep it.
+
 ---
 
 ## The problem
@@ -15,12 +17,6 @@ That covers what Claude _observed_. It doesn't cover what you need Claude to _kn
 The decisions you made before Claude was in the room. The constraints that aren't obvious from the code. The approaches you already tried and rejected. The current state of something half-finished. That context doesn't emerge from observation — it has to be written intentionally.
 
 `claude-lore` is where you put that.
-
----
-
-## What "lore" means here
-
-Lore is the accumulated knowledge of a world — the history, the decisions, the reasons things are the way they are. Every project has its own lore: the stack decisions, the rejected approaches, the constraints, the current state.
 
 ---
 
