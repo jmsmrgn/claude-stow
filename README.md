@@ -34,7 +34,7 @@ Four pieces work together:
 
 **The session hook** — a small script that runs at the start of every Claude Code session. It reads your vault and injects the right context automatically. You don't think about it.
 
-**The checkpoint hook** — runs after every Claude response (Stop event), rate-limited to fire an instruction every 5 turns by default (configurable). It tells Claude to update your vault files periodically without waiting for you to ask. The automated equivalent of "save your work."
+**The checkpoint hook** — runs after every Claude response (Stop event), rate-limited to inject a vault update reminder every 5 turns by default (configurable). A nudge toward keeping the vault current during long sessions.
 
 **[MCPVault](https://github.com/bitbonsai/mcpvault)** — lets Claude update your vault files surgically during a session: appending a decision, updating a status, writing a note. The vault stays current without manual effort.
 
@@ -139,11 +139,9 @@ Either way, `STATUS.md` is the highest priority to fill in — it loads every se
 
 **During a session** — Claude uses MCPVault's `patch_note` tool to make surgical updates: appending a decision, changing a status line, updating next steps. This runs via the memory-writer subagent — a lightweight Haiku agent installed to `~/.claude/agents/` by the setup script — in an isolated context window so vault I/O never pollutes the main session.
 
-**Periodically** — the checkpoint hook fires after every Claude response and emits a vault update instruction every 5 turns (adjustable via `WRITE_EVERY` in `hooks/session-checkpoint.sh`). Claude updates `STATUS.md` and `DECISIONS.md` automatically in the background.
+**Periodically** — the checkpoint hook injects a vault update reminder into context every 5 turns (adjustable via `WRITE_EVERY` in `hooks/session-checkpoint.sh`). This increases the likelihood of a mid-session vault write during longer sessions, but is not guaranteed — Claude Code's hook system injects the reminder as context rather than forcing a tool call.
 
-You can also trigger a manual update at any time by saying `close the session` — Claude will write a full session summary to your vault files.
-
-**Gap to be aware of:** Claude Code has no SessionEnd or OnExit hook. If a session ends before the checkpoint threshold is reached — whether by accident or just a short exchange — no automatic vault write fires. Lowering `WRITE_EVERY` reduces this window but doesn't eliminate it. For any session where something worth keeping happened, `close the session` is the reliable fallback.
+**The reliable method is `close the session`.** Say it at any natural stopping point and Claude will write a full session summary to your vault. For anything worth keeping, this is the path to use.
 
 ---
 
