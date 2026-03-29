@@ -71,7 +71,7 @@ The setup script will:
 After setup:
 
 1. Open `~/claude-lore/Global/CONTEXT.md` and fill in your identity, stack, and cross-project constraints — package manager preferences, git conventions, infrastructure defaults, anything that applies across all your projects.
-2. Add the vault protocol to `~/.claude/CLAUDE.md` — the setup script will print the exact block to paste. This tells Claude Code to read your project's STATUS.md at session start and update vault files at session end.
+2. The setup script will print a block to paste into `~/.claude/CLAUDE.md`. That file is Claude's global instruction file — it controls how Claude behaves across all sessions. The block tells Claude Code to read your vault at session start and write back to it at session end. If the file doesn't exist yet, create it. If it does, paste the block at the end.
 3. Start a Claude Code session from your project directory. Context loads automatically.
 
 ---
@@ -195,7 +195,22 @@ Claude will walk the codebase, identify what's worth encoding, and create the ru
 
 ## Claude Desktop bridge
 
-If you use Claude Desktop for planning and Claude Code for execution, point the MCPVault server in your Desktop MCP config at the same vault directory. Context you write in Desktop sessions becomes available to Claude Code sessions automatically.
+If you use Claude Desktop for planning and Claude Code for execution, you can point both at the same vault. Context written in a Desktop session carries over to your next Claude Code session automatically.
+
+Open `~/Library/Application Support/Claude/claude_desktop_config.json` (create it if it doesn't exist) and add MCPVault under `mcpServers`, pointing at your vault directory:
+
+```json
+{
+  "mcpServers": {
+    "mcpvault": {
+      "command": "npx",
+      "args": ["-y", "mcpvault", "--vault", "~/claude-lore"]
+    }
+  }
+}
+```
+
+Replace `~/claude-lore` with your actual vault path if you chose a different location during setup. Restart Claude Desktop after saving.
 
 This is optional. `claude-lore` works entirely within Claude Code without it.
 
