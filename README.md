@@ -1,10 +1,6 @@
 # claude-stow
 
-> **Renamed:** This repo was previously `claude-lore`. If you cloned it before March 30 2026, update your remote:
->
-> ```
-> git remote set-url origin git@github.com:jmsmrgn/claude-stow.git
-> ```
+> **Previously `claude-lore`** — see [Migrating from claude-lore](#migrating-from-claude-lore) if you have an existing install. To remove the tool entirely, see [Uninstall](#uninstall).
 
 Persistent project memory that follows Claude across sessions. No database, no background service, no infrastructure.
 
