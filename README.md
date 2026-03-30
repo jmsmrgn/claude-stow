@@ -193,6 +193,31 @@ The hook system is Claude Code-specific — it uses `settings.json` lifecycle ho
 
 ---
 
+## Migrating from claude-lore
+
+If you installed `claude-lore` before the rename, run these commands:
+
+```bash
+mv ~/git/claude-lore ~/git/claude-stow
+mv ~/.claude/lore.conf ~/.claude/stow.conf
+sed -i '' 's|claude-lore|claude-stow|g' ~/.claude/stow.conf
+sed -i '' 's|claude-lore|claude-stow|g' ~/.claude/settings.json
+```
+
+If your vault was at a custom path, update `~/.claude/stow.conf` manually. Then update your `CLAUDE.md` block to reflect the new repo path.
+
+---
+
+## Uninstall
+
+```bash
+./uninstall.sh
+```
+
+Removes hooks from `settings.json`, the memory-writer agent, `stow.conf`, and the checkpoint log. Your vault directory is not touched — delete it manually if you want it gone.
+
+---
+
 ## License
 
 MIT
