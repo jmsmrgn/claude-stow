@@ -25,6 +25,13 @@ PROJECTS_DIR="$HOME/.claude/projects/$ENCODED_PATH"
 JSONL_FILE=$(ls -t "$PROJECTS_DIR"/*.jsonl 2>/dev/null | head -1)
 [[ -z "$JSONL_FILE" || ! -f "$JSONL_FILE" ]] && exit 0
 
+# Skip if JSONL hasn't grown since the last checkpoint run
+JSONL_HASH=$(echo "$JSONL_FILE" | md5 -q 2>/dev/null || echo "$JSONL_FILE" | md5sum | cut -d' ' -f1)
+STATE_FILE="/tmp/stow_ckpt_${JSONL_HASH}.last"
+CURRENT_SIZE=$(wc -c < "$JSONL_FILE" | tr -d ' ')
+LAST_SIZE=$(cat "$STATE_FILE" 2>/dev/null || echo 0)
+[[ "$CURRENT_SIZE" -le "$LAST_SIZE" ]] && exit 0
+
 # Build vault update prompt via Python — handles all string interpolation and
 # escaping cleanly. Exits with no output if the session is too short to warrant
 # a vault write (< 3 user turns or no extractable content).
@@ -123,6 +130,9 @@ if [[ ! -s "$PROMPT_FILE" ]]; then
   rm -f "$PROMPT_FILE"
   exit 0
 fi
+
+# Record current size before launching so rapid re-fires are skipped
+echo "$CURRENT_SIZE" > "$STATE_FILE"
 
 # Launch vault update as a background subprocess — silent, logs all output
 claude -p "$(cat "$PROMPT_FILE")" \
