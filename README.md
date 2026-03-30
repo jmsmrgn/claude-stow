@@ -1,10 +1,14 @@
-# claude-lore
+# claude-stow
+
+> **Renamed:** This repo was previously `claude-lore`. If you cloned it before March 30 2026, update your remote:
+>
+> ```
+> git remote set-url origin git@github.com:jmsmrgn/claude-stow.git
+> ```
 
 Persistent project memory that follows Claude across sessions. No database, no background service, no infrastructure.
 
-Every project has lore: the decisions made before Claude was in the room, the approaches already tried, the reasons things are the way they are. This is where you keep it.
-
-Most workflows already start with a plan. This is for everything that happens after.
+Every project accumulates context: decisions made before Claude was in the room, approaches already tried, the reasons things are the way they are. `claude-stow` puts that context somewhere it can easily referenced and edited — and keeps it current automatically.
 
 ---
 
@@ -16,9 +20,9 @@ That covers what Claude _observed_. It doesn't cover what you need Claude to _kn
 
 Many users already solve this with a `CLAUDE.md` and a project context file. That's the right instinct. But a file you write before the project begins reflects what was true at the time of writing. It goes stale. Decisions accumulate, approaches get rejected, the current state shifts — and none of that finds its way back into the file unless you put it there manually.
 
-`claude-lore` starts the same way: intentional foundation you write. But from there, Claude maintains it. Every decision appends. Every session patches the previous state. The context stays current without you having to remember to update it.
+`claude-stow` starts the same way: intentional foundation you write. But from there, Claude maintains it. Every decision appends. Every session patches the previous state. The context stays current without you having to remember to update it.
 
-> **Claude Desktop users:** Auto Memory and Auto Dream are Claude Code-only features. Desktop sessions have no equivalent native memory — `claude-lore` fills that gap directly, not just as a complement to native memory but as a primary persistence layer.
+> **Claude Desktop users:** Auto Memory and Auto Dream are Claude Code-only features. Desktop sessions have no equivalent native memory — `claude-stow` fills that gap directly, not just as a complement to native memory but as a primary persistence layer.
 
 ---
 
@@ -30,7 +34,7 @@ Three pieces work together:
 
 **The session hook** — a small script that runs at the start of every Claude Code session. It reads your vault and injects the right context automatically. You don't think about it.
 
-**The checkpoint hook** — runs when a session ends (Stop event). It reads the session JSONL, extracts the conversation, and launches a background `claude -p` subprocess to update STATUS.md and DECISIONS.md automatically. No user action required. Output is logged to `~/.claude/lore-checkpoint.log`.
+**The checkpoint hook** — runs when a session ends (Stop event). It reads the session JSONL, extracts the conversation, and launches a background `claude -p` subprocess to update STATUS.md and DECISIONS.md automatically. No user action required. Output is logged to `~/.claude/stow-checkpoint.log`.
 
 No database. No running processes. No port 37777.
 
@@ -42,22 +46,22 @@ No database. No running processes. No port 37777.
 
 **[Continuous-Claude](https://github.com/parcadei/Continuous-Claude-v3)** is a full agent orchestration framework — 109 skills, 32 agents, 30 hooks, Docker, PostgreSQL, and a 12-step setup wizard. Different scope entirely.
 
-`claude-lore` is for the user who wants their context to survive session boundaries and nothing else. Dependencies are `jq` and `python3` — both standard on macOS and Linux.
+`claude-stow` is for the user who wants their context to survive session boundaries and nothing else. Dependencies are `jq` and `python3` — both standard on macOS and Linux.
 
 ---
 
 ## Install
 
 ```bash
-git clone https://github.com/jmsmrgn/claude-lore.git
-cd claude-lore
+git clone https://github.com/jmsmrgn/claude-stow.git
+cd claude-stow
 chmod +x setup.sh
 ./setup.sh
 ```
 
 The setup script will:
 
-- Ask where to install the vault (default: `~/claude-lore`)
+- Ask where to install the vault (default: `~/claude-stow`)
 - Copy the vault template
 - Inject the session and checkpoint hooks into `~/.claude/settings.json`
 - Install the memory-writer subagent to `~/.claude/agents/`
@@ -66,7 +70,7 @@ The setup script will:
 
 After setup:
 
-1. Open `~/claude-lore/Global/CONTEXT.md` and fill in your identity, stack, and cross-project constraints — package manager preferences, git conventions, infrastructure defaults, anything that applies across all your projects.
+1. Open `~/claude-stow/Global/CONTEXT.md` and fill in your identity, stack, and cross-project constraints — package manager preferences, git conventions, infrastructure defaults, anything that applies across all your projects.
 2. The setup script will print a block to paste into `~/.claude/CLAUDE.md`. That file is Claude's global instruction file — it controls how Claude behaves across all sessions. The block tells Claude Code to read your vault at session start. If the file doesn't exist yet, create it. If it does, paste the block at the end.
 3. Start a Claude Code session from your project directory. Context loads automatically.
 
@@ -88,7 +92,7 @@ A common mistake is putting stack conventions (package manager, git rules, infra
 ## Vault structure
 
 ```
-~/claude-lore/
+~/claude-stow/
 ├── Global/
 │   ├── CONTEXT.md       ← who you are, your stack, cross-project constraints
 │   └── DECISIONS.md     ← graveyard for rejected approaches
@@ -125,7 +129,7 @@ Either way, `STATUS.md` is the highest priority to fill in — it loads every se
 
 ## How vault updates happen
 
-**Automatically on session close** — the checkpoint hook fires when the session ends, extracts the conversation from the session JSONL, and launches a Haiku subprocess that reads the transcript and updates STATUS.md and DECISIONS.md. This runs in the background — you don't wait for it. Check `~/.claude/lore-checkpoint.log` to see what was written.
+**Automatically on session close** — the checkpoint hook fires when the session ends, extracts the conversation from the session JSONL, and launches a Haiku subprocess that reads the transcript and updates STATUS.md and DECISIONS.md. This runs in the background — you don't wait for it. Check `~/.claude/stow-checkpoint.log` to see what was written.
 
 Sessions with fewer than 3 user turns are skipped (accidental opens, quick lookups).
 
@@ -150,7 +154,7 @@ Close the session — update STATUS.md and DECISIONS.md with everything from tod
 
 Claude Code supports a `.claude/rules/` directory that lets you define conditional instructions scoped to specific file paths — enforcing code style rules only when editing a particular module, or injecting API conventions when touching certain directories.
 
-This isn't included in the base `claude-lore` setup intentionally. Rules are most useful once a project has settled conventions worth encoding. Writing them on day one means inventing constraints for a codebase that doesn't exist yet.
+This isn't included in the base `claude-stow` setup intentionally. Rules are most useful once a project has settled conventions worth encoding. Writing them on day one means inventing constraints for a codebase that doesn't exist yet.
 
 Once your project has real patterns, start a Claude Code session and say:
 
@@ -176,7 +180,7 @@ For Desktop to write to vault files, configure the vault directory as an allowed
 
 ## Portability
 
-The hook system is Claude Code-specific — it uses `settings.json` lifecycle hooks that only Claude Code supports. The vault itself (plain markdown files) is tool-agnostic. Adapting `claude-lore` for Cursor, Windsurf, or any other tool that supports session hooks is straightforward — the vault stays the same, only the hook layer changes.
+The hook system is Claude Code-specific — it uses `settings.json` lifecycle hooks that only Claude Code supports. The vault itself (plain markdown files) is tool-agnostic. Adapting `claude-stow` for Cursor, Windsurf, or any other tool that supports session hooks is straightforward — the vault stays the same, only the hook layer changes.
 
 ---
 
