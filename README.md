@@ -18,25 +18,19 @@ Many users already solve this with a `CLAUDE.md` and a project context file. Tha
 
 `claude-lore` starts the same way: intentional foundation you write. But from there, Claude maintains it. Every decision appends. Every session patches the previous state. The context stays current without you having to remember to update it.
 
-> **Claude Desktop users:** Auto Memory and Auto Dream are Claude Code-only features. Desktop sessions have no equivalent native memory — `claude-lore` fills that gap directly, not just as a complement to native memory but as a primary persistence layer. Point both at the same vault and context from Desktop thinking is available the moment you open Code.
-
-The constraints that aren't obvious from the code. The approaches you already tried and rejected. The current state of something half-finished. That context doesn't emerge from observation — it has to be written intentionally. And then it has to stay current.
-
-`claude-lore` is where you put that.
+> **Claude Desktop users:** Auto Memory and Auto Dream are Claude Code-only features. Desktop sessions have no equivalent native memory — `claude-lore` fills that gap directly, not just as a complement to native memory but as a primary persistence layer.
 
 ---
 
 ## How it works
 
-Four pieces work together:
+Three pieces work together:
 
 **The vault** — a folder of markdown files, one for global context and one per project. You write them. You own them. They're just text files.
 
 **The session hook** — a small script that runs at the start of every Claude Code session. It reads your vault and injects the right context automatically. You don't think about it.
 
-**The checkpoint hook** — runs after every Claude response (Stop event), rate-limited to inject a vault update reminder every 5 turns by default (configurable). A nudge toward keeping the vault current during long sessions.
-
-**[MCPVault](https://github.com/bitbonsai/mcpvault)** — lets Claude update your vault files surgically during a session: appending a decision, updating a status, writing a note. The vault stays current without manual effort.
+**The checkpoint hook** — runs when a session ends (Stop event). It reads the session JSONL, extracts the conversation, and launches a background `claude -p` subprocess to update STATUS.md and DECISIONS.md automatically. No user action required. Output is logged to `~/.claude/lore-checkpoint.log`.
 
 No database. No running processes. No port 37777.
 
@@ -48,7 +42,7 @@ No database. No running processes. No port 37777.
 
 **[Continuous-Claude](https://github.com/parcadei/Continuous-Claude-v3)** is a full agent orchestration framework — 109 skills, 32 agents, 30 hooks, Docker, PostgreSQL, and a 12-step setup wizard. Different scope entirely.
 
-`claude-lore` is for the user who wants their context to survive session boundaries and nothing else. Dependencies are node, jq, and MCPVault (handled automatically by the setup script).
+`claude-lore` is for the user who wants their context to survive session boundaries and nothing else. Dependencies are `jq` and `python3` — both standard on macOS and Linux.
 
 ---
 
@@ -64,16 +58,16 @@ chmod +x setup.sh
 The setup script will:
 
 - Ask where to install the vault (default: `~/claude-lore`)
-- Install MCPVault if needed
 - Copy the vault template
-- Inject the session hook into `~/.claude/settings.json`
+- Inject the session and checkpoint hooks into `~/.claude/settings.json`
+- Install the memory-writer subagent to `~/.claude/agents/`
 
-> **Note:** Keep the cloned repo in place after running setup. The hook points to `hooks/inject-context.sh` inside it — moving or deleting the repo breaks the hook. The repo contains only installable source files. Your vault (where project context lives) is a separate directory created during setup.
+> **Note:** Keep the cloned repo in place after running setup. The hooks point to scripts inside it — moving or deleting the repo breaks the hooks. The repo contains only installable source files. Your vault (where project context lives) is a separate directory created during setup.
 
 After setup:
 
 1. Open `~/claude-lore/Global/CONTEXT.md` and fill in your identity, stack, and cross-project constraints — package manager preferences, git conventions, infrastructure defaults, anything that applies across all your projects.
-2. The setup script will print a block to paste into `~/.claude/CLAUDE.md`. That file is Claude's global instruction file — it controls how Claude behaves across all sessions. The block tells Claude Code to read your vault at session start and write back to it at session end. If the file doesn't exist yet, create it. If it does, paste the block at the end.
+2. The setup script will print a block to paste into `~/.claude/CLAUDE.md`. That file is Claude's global instruction file — it controls how Claude behaves across all sessions. The block tells Claude Code to read your vault at session start. If the file doesn't exist yet, create it. If it does, paste the block at the end.
 3. Start a Claude Code session from your project directory. Context loads automatically.
 
 ---
@@ -125,62 +119,30 @@ If you prefer to set up the files yourself first, the script creates the folder 
 ./scripts/new-project.sh my-project
 ```
 
-Pass an optional repo path to also generate a project-scoped `CLAUDE.md`:
-
-```bash
-./scripts/new-project.sh my-project ~/git/my-project
-```
-
-Either way, `STATUS.md` is the highest priority to fill in — it loads every session. `CONTEXT.md` and `DECISIONS.md` can wait until there's something worth locking down. See [Vault structure](#vault-structure) for what belongs in each file.
+Either way, `STATUS.md` is the highest priority to fill in — it loads every session. `CONTEXT.md` and `DECISIONS.md` can wait until there's something worth locking down.
 
 ---
 
 ## How vault updates happen
 
-**During a session** — Claude uses MCPVault's `patch_note` tool to make surgical updates: appending a decision, changing a status line, updating next steps. This runs via the memory-writer subagent — a lightweight Haiku agent installed to `~/.claude/agents/` by the setup script — in an isolated context window so vault I/O never pollutes the main session.
+**Automatically on session close** — the checkpoint hook fires when the session ends, extracts the conversation from the session JSONL, and launches a Haiku subprocess that reads the transcript and updates STATUS.md and DECISIONS.md. This runs in the background — you don't wait for it. Check `~/.claude/lore-checkpoint.log` to see what was written.
 
-**Periodically** — the checkpoint hook injects a vault update reminder into context every 5 turns (adjustable via `WRITE_EVERY` in `hooks/session-checkpoint.sh`). This increases the likelihood of a mid-session vault write during longer sessions, but is not guaranteed — Claude Code's hook system injects the reminder as context rather than forcing a tool call.
+Sessions with fewer than 3 user turns are skipped (accidental opens, quick lookups).
 
-**The reliable method is `close the session`.** Say it at any natural stopping point and Claude will write a full session summary to your vault. For anything worth keeping, this is the path to use.
+**Manually during a session** — say "Lock this: [decision]" or "Update the vault" and Claude will use the memory-writer subagent to make surgical updates within the active session. Useful for capturing something mid-work without closing the session.
 
----
+**Session prompts** — these are optional but available:
 
-## Session prompts
-
-The session hook and checkpoint hook handle context automatically in Claude Code. But when you're resuming work, switching environments, or need to pull in deeper context mid-session, these are the prompts to reach for.
-
-**Resuming a project:**
 ```
-Check the vault for [project] context and resume from where we left off.
-```
+# Capture a mid-session decision immediately
+Lock this: [decision]. Update DECISIONS.md now.
 
-**Loading deeper context when needed:**
-```
-Pull the full CONTEXT.md and DECISIONS.md for [project] — I need you to understand the full picture before we proceed.
-```
+# Load deeper context when needed
+Pull the full CONTEXT.md and DECISIONS.md for [project] — I need the full picture before we proceed.
 
-**Closing a session:**
-```
+# Explicit session close (still works, runs before the background subprocess)
 Close the session — update STATUS.md and DECISIONS.md with everything from today.
 ```
-
-**Capturing a decision mid-session:**
-```
-Lock this: [decision]. Update DECISIONS.md now.
-```
-
-Any natural phrasing works. The key is referencing the vault explicitly so Claude knows to read the files rather than rely on what's already in context.
-
-**Claude Desktop users:** the hook doesn't fire in Desktop sessions, so the resume prompt is load-bearing, not optional. Start every Desktop session with it. The MCPVault MCP server must also be configured in your Desktop MCP config pointing at the same vault directory — see [Claude Desktop bridge](#claude-desktop-bridge).
-
----
-
-## Why MCPVault and not a CLI tool
-
-Some Claude Code workflows prefer CLI tools over MCP servers for simplicity. MCPVault is the right choice here for two reasons:
-
-- `patch_note` provides structured confirmation that a write succeeded, which Claude uses to verify vault updates mid-session rather than assuming success.
-- MCPVault works in Claude Desktop, where bash isn't available — relevant if you use Desktop for planning and Code for execution (see [Claude Desktop bridge](#claude-desktop-bridge) below).
 
 ---
 
@@ -202,32 +164,19 @@ Claude will walk the codebase, identify what's worth encoding, and create the ru
 
 ## Claude Desktop bridge
 
-Some of the most important project context emerges in conversations that never touch a codebase — exploring tradeoffs, stress-testing an approach, working through something ambiguous before committing to a direction. That kind of unstructured thinking is where Desktop earns its place. Claude Code is where you build. The vault is what connects them.
+The checkpoint hook only runs in Claude Code — Desktop sessions don't fire Stop events. But the vault is just files. If you do planning or exploratory thinking in Desktop and want that context in your Code sessions, write it to the vault manually:
 
-Point both at the same vault and nothing gets lost. Context written in a Desktop session carries over to your next Claude Code session automatically.
-
-Open `~/Library/Application Support/Claude/claude_desktop_config.json` (create it if it doesn't exist) and add MCPVault under `mcpServers`, pointing at your vault directory:
-
-```json
-{
-  "mcpServers": {
-    "mcpvault": {
-      "command": "npx",
-      "args": ["-y", "mcpvault", "--vault", "~/claude-lore"]
-    }
-  }
-}
+```
+Update my vault for [project]: we decided to [decision]. Next steps are [X, Y, Z].
 ```
 
-Replace `~/claude-lore` with your actual vault path if you chose a different location during setup. Restart Claude Desktop after saving.
-
-This is optional. `claude-lore` works entirely within Claude Code without it.
+For Desktop to write to vault files, configure the vault directory as an allowed path in your Desktop MCP settings, or use any text editor — the files are plain markdown. Desktop sessions can reference vault files by path for read access without any additional setup.
 
 ---
 
 ## Portability
 
-The hook system is Claude Code-specific — it uses `settings.json` lifecycle hooks that only Claude Code supports. The vault itself (markdown files + MCPVault) is tool-agnostic. Adapting `claude-lore` for Cursor, Windsurf, or any other tool that supports session hooks is straightforward — the vault stays the same, only the hook layer changes.
+The hook system is Claude Code-specific — it uses `settings.json` lifecycle hooks that only Claude Code supports. The vault itself (plain markdown files) is tool-agnostic. Adapting `claude-lore` for Cursor, Windsurf, or any other tool that supports session hooks is straightforward — the vault stays the same, only the hook layer changes.
 
 ---
 
@@ -235,8 +184,8 @@ The hook system is Claude Code-specific — it uses `settings.json` lifecycle ho
 
 - macOS or Linux
 - `jq`
-- `node` (for [MCPVault](https://github.com/bitbonsai/mcpvault))
-- Claude Code
+- `python3`
+- Claude Code (for the checkpoint subprocess)
 
 ---
 
