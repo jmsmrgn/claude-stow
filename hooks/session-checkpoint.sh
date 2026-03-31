@@ -20,6 +20,12 @@ source "$CONFIG_FILE"
 [[ -z "$VAULT_DIR" ]] && exit 0
 
 PROJECT_NAME=$(basename "$PWD")
+# Allow per-repo override: add PROJECT_NAME=my-name to a .stow file in the repo root.
+# Useful when two repos share the same directory name and would otherwise collide in the vault.
+if [[ -f "$PWD/.stow" ]]; then
+  _override=$(grep -m1 '^PROJECT_NAME=' "$PWD/.stow" | cut -d= -f2-)
+  [[ -n "$_override" ]] && PROJECT_NAME="$_override"
+fi
 ENCODED_PATH=$(echo "$PWD" | sed 's|/|-|g')
 PROJECTS_DIR="$HOME/.claude/projects/$ENCODED_PATH"
 

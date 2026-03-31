@@ -29,6 +29,12 @@ if [[ ! -d "$VAULT_DIR" ]]; then
 fi
 
 PROJECT_NAME=$(basename "$PWD")
+# Allow per-repo override: add PROJECT_NAME=my-name to a .stow file in the repo root.
+# Useful when two repos share the same directory name and would otherwise collide in the vault.
+if [[ -f "$PWD/.stow" ]]; then
+  _override=$(grep -m1 '^PROJECT_NAME=' "$PWD/.stow" | cut -d= -f2-)
+  [[ -n "$_override" ]] && PROJECT_NAME="$_override"
+fi
 output=""
 
 if [[ -f "$VAULT_DIR/Global/CONTEXT.md" ]]; then
