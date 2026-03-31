@@ -40,6 +40,17 @@ CURRENT_SIZE=$(wc -c < "$JSONL_FILE" | tr -d ' ')
 LAST_SIZE=$(cat "$STATE_FILE" 2>/dev/null || echo 0)
 [[ "$CURRENT_SIZE" -le "$LAST_SIZE" ]] && exit 0
 
+# Serialize concurrent Stop firings — one checkpoint per project at a time.
+# If a checkpoint is already running for this project, exit immediately.
+# Stale locks from crashed processes are cleared via kill -0 liveness check.
+LOCK_FILE="/tmp/stow_ckpt_${JSONL_HASH}.pid"
+if [[ -f "$LOCK_FILE" ]]; then
+  kill -0 "$(cat "$LOCK_FILE")" 2>/dev/null && exit 0
+  rm -f "$LOCK_FILE"
+fi
+echo $$ > "$LOCK_FILE"
+trap "rm -f '$LOCK_FILE'" EXIT
+
 LOG_FILE="$HOME/.claude/stow-checkpoint.log"
 PROMPT_FILE=$(mktemp /tmp/stow_prompt_XXXXXX.txt)
 SUMMARY_FILE=$(mktemp /tmp/stow_summary_XXXXXX.txt)
