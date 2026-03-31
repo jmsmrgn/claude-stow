@@ -24,7 +24,13 @@ PROJECT_NAME=$(basename "$PWD")
 # Useful when two repos share the same directory name and would otherwise collide in the vault.
 if [[ -f "$PWD/.stow" ]]; then
   _override=$(grep -m1 '^PROJECT_NAME=' "$PWD/.stow" | cut -d= -f2-)
-  [[ -n "$_override" ]] && PROJECT_NAME="$_override"
+  if [[ -n "$_override" ]]; then
+    if [[ "$_override" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+      PROJECT_NAME="$_override"
+    else
+      echo "[stow] Invalid PROJECT_NAME in .stow (only alphanumeric, hyphen, underscore allowed): $_override" >&2
+    fi
+  fi
 fi
 ENCODED_PATH=$(echo "$PWD" | sed 's|/|-|g')
 PROJECTS_DIR="$HOME/.claude/projects/$ENCODED_PATH"
