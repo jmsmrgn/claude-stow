@@ -54,7 +54,8 @@ if [[ -f "$LOCK_FILE" ]]; then
   kill -0 "$(cat "$LOCK_FILE")" 2>/dev/null && exit 0
   rm -f "$LOCK_FILE"
 fi
-echo $$ > "$LOCK_FILE"
+# Atomic create — noclobber fails if another process wins the race
+( set -o noclobber; echo $$ > "$LOCK_FILE" ) 2>/dev/null || exit 0
 trap "rm -f '$LOCK_FILE'" EXIT
 
 LOG_FILE="$HOME/.claude/stow-checkpoint.log"
@@ -181,9 +182,6 @@ if [[ $CLAUDE_EXIT -ne 0 || ! -s "$SUMMARY_FILE" ]]; then
   exit 0
 fi
 
-# Record current size now that summarisation succeeded
-echo "$CURRENT_SIZE" > "$STATE_FILE"
-
 # ── Phase 2: deterministic Python vault write — no LLM ───────────────────────
 python3 - "$SUMMARY_FILE" "$PROJECT_NAME" "$VAULT_DIR" << 'PYEOF' >> "$LOG_FILE" 2>&1
 import sys, os, re
@@ -250,5 +248,8 @@ if decisions_raw and decisions_raw.lower() != 'none':
             f.write('\n'.join(rows) + '\n')
         print(f'[stow] appended {len(rows)} decision(s) to {decisions_path}')
 PYEOF
+
+# Record size only after Phase 2 completes successfully
+echo "$CURRENT_SIZE" > "$STATE_FILE"
 
 rm -f "$PROMPT_FILE" "$SUMMARY_FILE"
