@@ -207,10 +207,29 @@ if not current_state:
     print('[stow] summary parse failed — no CURRENT_STATE section')
     sys.exit(1)
 
-# Write STATUS.md
+# Write STATUS.md — patch managed sections, preserve custom sections
 project_dir = os.path.join(vault, 'Projects', project)
 os.makedirs(project_dir, exist_ok=True)
 status_path = os.path.join(project_dir, 'STATUS.md')
+
+MANAGED = {'current state', 'last session', 'next steps'}
+custom_sections = []
+
+if os.path.isfile(status_path):
+    try:
+        with open(status_path) as f:
+            existing = f.read()
+        parts = re.split(r'^(## .+)$', existing, flags=re.MULTILINE)
+        # parts: [preamble, header, body, header, body, ...]
+        i = 1
+        while i < len(parts) - 1:
+            header = parts[i]
+            body = parts[i + 1].rstrip()
+            if header.lstrip('#').strip().lower() not in MANAGED:
+                custom_sections.append((header, body))
+            i += 2
+    except Exception:
+        pass
 
 status_content = f"""---
 updated: '{today}'
@@ -225,6 +244,9 @@ updated: '{today}'
 ## Next steps
 {next_steps}
 """
+
+for header, body in custom_sections:
+    status_content += f"\n{header}\n{body}\n"
 
 with open(status_path, 'w') as f:
     f.write(status_content)
@@ -248,6 +270,13 @@ if decisions_raw and decisions_raw.lower() != 'none':
             f.write('\n'.join(rows) + '\n')
         print(f'[stow] appended {len(rows)} decision(s) to {decisions_path}')
 PYEOF
+PHASE2_EXIT=$?
+
+if [[ $PHASE2_EXIT -ne 0 ]]; then
+  echo "[stow] Phase 2 write failed (exit $PHASE2_EXIT) — checkpoint not advanced" >> "$LOG_FILE"
+  rm -f "$PROMPT_FILE" "$SUMMARY_FILE"
+  exit 1
+fi
 
 # Record size only after Phase 2 completes successfully
 echo "$CURRENT_SIZE" > "$STATE_FILE"
